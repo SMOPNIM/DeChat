@@ -31,12 +31,25 @@ a:hover { text-decoration: underline; }
 .btn-outline:hover { background: rgba(255,255,255,0.1); }
 
 /* Chat */
-.chat-page { display: flex; height: 100vh; }
+.chat-page { display: flex; flex-direction: column; height: 100vh; }
+
+/* Top Bar */
+.top-bar {
+  height: 50px; flex-shrink: 0; display: flex; align-items: center;
+  padding: 0 18px; background: #22222e; color: #fff; gap: 12px;
+}
+.top-bar-title { font-size: 18px; font-weight: 700; letter-spacing: 1px; }
+.top-bar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.top-bar-right .user-avatar {
+  width: 28px; height: 28px; border-radius: 50%; background: var(--primary);
+  display: flex; align-items: center; justify-content: center; color: #fff;
+  font-size: 12px; font-weight: 600; flex-shrink: 0;
+}
+.top-bar-right .user-nickname { font-size: 13px; font-weight: 500; }
+
+.chat-body { display: flex; flex: 1; min-height: 0; }
 .chat-sidebar { width: 280px; background: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column; flex-shrink: 0; }
-.sidebar-header { padding: 16px 18px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-.user-info { display: flex; align-items: center; gap: 8px; }
-.user-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 600; flex-shrink: 0; }
-.user-nickname { flex: 1; font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-header { padding: 12px 18px; border-bottom: 1px solid rgba(255,255,255,0.08); }
 
 /* Sidebar tabs */
 .sidebar-tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,0.08); }

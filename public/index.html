@@ -38,13 +38,17 @@
 
   <!-- Chat -->
   <div id="chat-page" class="chat-page" style="display:none">
+    <div class="top-bar">
+      <span class="top-bar-title">德信 · DeChat</span>
+      <div class="top-bar-right">
+        <span class="user-avatar" id="my-avatar"></span>
+        <span class="user-nickname" id="my-nickname"></span>
+        <button class="btn btn-sm" id="logout-btn">退出</button>
+      </div>
+    </div>
+    <div class="chat-body">
     <div class="chat-sidebar">
       <div class="sidebar-header">
-        <div class="user-info">
-          <span class="user-avatar" id="my-avatar"></span>
-          <span class="user-nickname" id="my-nickname"></span>
-          <button class="btn btn-sm" id="logout-btn">退出</button>
-        </div>
       </div>
       <div class="sidebar-tabs">
         <button class="sidebar-tab active" data-tab="conversations">会话</button>
@@ -96,9 +100,10 @@
         <div class="input-row">
           <textarea id="message-input" placeholder="输入消息..." rows="3"></textarea>
           <button class="btn btn-primary send-btn" id="send-btn">发送</button>
-        </div>
       </div>
     </div>
+  </div>
+</div>
   </div>
 
   <!-- Dialogs -->
