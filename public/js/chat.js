@@ -141,8 +141,10 @@ function loadConversations() {
       const initial = name.charAt(0).toUpperCase()
       const color = c.type === 'group' ? '#2ecc71' : getAvatarColor(name)
       const lastMsg = c.last_msg ? (c.last_msg.length > 25 ? c.last_msg.slice(0,25)+'...' : c.last_msg) : ''
+      const typeLabel = c.id === 1 ? '公共' : (c.type === 'group' ? '群聊' : '私聊')
+      const typeClass = c.id === 1 ? 'public' : c.type
       div.innerHTML = `<div class="conv-avatar" style="background:${color}">${initial}</div>
-        <div class="conv-info"><div class="conv-name">${escapeHtml(name)}</div>
+        <div class="conv-info"><div class="conv-name">${escapeHtml(name)} <span class="conv-type-label ${typeClass}">${typeLabel}</span></div>
         <div class="conv-last">${escapeHtml(lastMsg)}</div></div>`
       div.addEventListener('click', () => selectConversation(c.id))
       list.appendChild(div)
