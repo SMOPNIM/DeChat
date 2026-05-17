@@ -42,8 +42,9 @@ a:hover { text-decoration: underline; }
   display: inline-block; padding: 12px 24px; border: none; border-radius: 10px;
   font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s;
 }
-.btn-primary { width: 100%; background: var(--primary); color: #fff; }
+.btn-primary { background: var(--primary); color: #fff; }
 .btn-primary:hover { background: var(--primary-hover); }
+.auth-form .btn-primary { width: 100%; }
 .btn-sm { padding: 6px 14px; font-size: 13px; border-radius: 6px; background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
 .btn-sm:hover { background: rgba(255,255,255,0.25); }
 
