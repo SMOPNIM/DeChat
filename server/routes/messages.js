@@ -2,7 +2,7 @@ const { Router } = require('express')
 const multer = require('multer')
 const path = require('path')
 const crypto = require('crypto')
-const { saveMessage, getMessages } = require('../db')
+const { saveMessage, getMessages, getConversationParticipants } = require('../db')
 
 const storage = multer.diskStorage({
   destination: path.join(__dirname, '..', '..', 'uploads'),
@@ -24,14 +24,26 @@ const upload = multer({
 
 const router = Router()
 
-router.get('/', (req, res) => {
-  const messages = getMessages()
+router.use((req, res, next) => {
+  if (!req.session.userId) return res.status(401).json({ error: '未登录' })
+  next()
+})
+
+router.get('/:conversationId', (req, res) => {
+  const convId = parseInt(req.params.conversationId)
+  const participants = getConversationParticipants(convId)
+  if (!participants.includes(req.session.userId)) {
+    return res.status(403).json({ error: '无权访问此会话' })
+  }
+  const messages = getMessages(convId)
   res.json({ messages })
 })
 
-router.post('/', upload.single('image'), (req, res) => {
-  if (!req.session.userId) {
-    return res.status(401).json({ error: '未登录' })
+router.post('/:conversationId', upload.single('image'), (req, res) => {
+  const convId = parseInt(req.params.conversationId)
+  const participants = getConversationParticipants(convId)
+  if (!participants.includes(req.session.userId)) {
+    return res.status(403).json({ error: '无权访问此会话' })
   }
 
   let content = req.body.content || ''
@@ -44,8 +56,11 @@ router.post('/', upload.single('image'), (req, res) => {
     return res.status(400).json({ error: '消息不能为空' })
   }
 
-  const message = saveMessage(req.session.userId, content, type)
-  req.app.get('io').emit('new_message', message)
+  const message = saveMessage(req.session.userId, convId, content, type)
+  // broadcast to participants
+  participants.forEach(uid => {
+    req.app.get('io').to(`user:${uid}`).emit('new_message', message)
+  })
   res.json({ message })
 })
 

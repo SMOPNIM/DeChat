@@ -6,6 +6,9 @@ const { Server } = require('socket.io')
 const { initDb } = require('./db')
 const authRoutes = require('./routes/auth')
 const messageRoutes = require('./routes/messages')
+const friendRoutes = require('./routes/friends')
+const groupRoutes = require('./routes/groups')
+const conversationRoutes = require('./routes/conversations')
 
 async function main() {
   await initDb()
@@ -28,23 +31,26 @@ async function main() {
 
   app.use('/api/auth', authRoutes)
   app.use('/api/messages', messageRoutes)
+  app.use('/api/friends', friendRoutes)
+  app.use('/api/groups', groupRoutes)
+  app.use('/api/conversations', conversationRoutes)
 
   app.set('io', io)
 
   const onlineUsers = new Map()
 
   io.on('connection', (socket) => {
-    console.log(`[Socket] 用户已连接: ${socket.id}`)
-
     socket.on('user:online', (user) => {
-      onlineUsers.set(socket.id, user)
-      io.emit('online_users', Array.from(onlineUsers.values()))
+      if (user && user.id) {
+        socket.join(`user:${user.id}`)
+        onlineUsers.set(socket.id, user)
+        io.emit('online_users', Array.from(onlineUsers.values()))
+      }
     })
 
     socket.on('disconnect', () => {
       onlineUsers.delete(socket.id)
       io.emit('online_users', Array.from(onlineUsers.values()))
-      console.log(`[Socket] 用户已断开: ${socket.id}`)
     })
   })
 
