@@ -150,6 +150,21 @@ function initSocket() {
   })
   socket.on('connect', () => {
     console.log('Socket 已连接')
+    socket.emit('user:online', currentUser)
+  })
+  socket.on('online_users', (users) => {
+    renderOnlineUsers(users)
+  })
+}
+
+function renderOnlineUsers(users) {
+  const container = $('online-users')
+  container.innerHTML = ''
+  users.forEach(u => {
+    const div = document.createElement('div')
+    div.className = 'online-user'
+    div.innerHTML = `<span class="dot"></span><span>${escapeHtml(u.nickname)}</span>`
+    container.appendChild(div)
   })
 }
 

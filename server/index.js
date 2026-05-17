@@ -31,9 +31,19 @@ async function main() {
 
   app.set('io', io)
 
+  const onlineUsers = new Map()
+
   io.on('connection', (socket) => {
     console.log(`[Socket] 用户已连接: ${socket.id}`)
+
+    socket.on('user:online', (user) => {
+      onlineUsers.set(socket.id, user)
+      io.emit('online_users', Array.from(onlineUsers.values()))
+    })
+
     socket.on('disconnect', () => {
+      onlineUsers.delete(socket.id)
+      io.emit('online_users', Array.from(onlineUsers.values()))
       console.log(`[Socket] 用户已断开: ${socket.id}`)
     })
   })
