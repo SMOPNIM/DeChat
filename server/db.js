@@ -129,15 +129,64 @@ function getUser(id) {
 }
 
 function searchUsers(query) {
-  const r = db.exec('SELECT id, username, nickname FROM users WHERE username LIKE ? OR nickname LIKE ? LIMIT 20',
-    [`%${query}%`, `%${query}%`])
+  const isNumeric = /^\d+$/.test(query)
+  let sql = 'SELECT id, username, nickname FROM users WHERE username LIKE ? OR nickname LIKE ?'
+  const params = [`%${query}%`, `%${query}%`]
+  if (isNumeric) {
+    sql += ' OR id = ?'
+    params.push(parseInt(query))
+  }
+  sql += ' LIMIT 20'
+  const r = db.exec(sql, params)
   if (r.length === 0) return []
   return r[0].values.map(row => ({ id: row[0], username: row[1], nickname: row[2] }))
 }
 
+function updateUserProfile(userId, updates) {
+  const fields = []
+  const params = []
+  if (updates.username !== undefined) {
+    const existing = db.exec('SELECT id FROM users WHERE username = ? AND id != ?', [updates.username, userId])
+    if (existing.length > 0 && existing[0].values.length > 0) return { error: '用户名已存在' }
+    fields.push('username = ?')
+    params.push(updates.username)
+  }
+  if (updates.nickname !== undefined) {
+    fields.push('nickname = ?')
+    params.push(updates.nickname)
+  }
+  if (updates.avatar !== undefined) {
+    fields.push('avatar = ?')
+    params.push(updates.avatar)
+  }
+  if (fields.length === 0) return { error: '没有要更新的字段' }
+  params.push(userId)
+  db.run(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, params)
+  saveDb()
+  const user = getUser(userId)
+  return { user }
+}
+
+function updateUserPassword(userId, oldPassword, newPassword) {
+  const r = db.exec('SELECT password FROM users WHERE id = ?', [userId])
+  if (r.length === 0 || r[0].values.length === 0) return { error: '用户不存在' }
+  const currentHash = r[0].values[0][0]
+  if (!bcrypt.compareSync(oldPassword, currentHash)) return { error: '当前密码错误' }
+  const hashed = bcrypt.hashSync(newPassword, 10)
+  db.run('UPDATE users SET password = ? WHERE id = ?', [hashed, userId])
+  saveDb()
+  return { ok: true }
+}
+
 // friendships
 function sendFriendRequest(userId, friendUsername) {
-  const target = db.exec('SELECT id FROM users WHERE username = ?', [friendUsername])
+  const isNumeric = /^\d+$/.test(friendUsername)
+  let target
+  if (isNumeric) {
+    target = db.exec('SELECT id FROM users WHERE id = ?', [parseInt(friendUsername)])
+  } else {
+    target = db.exec('SELECT id FROM users WHERE username = ?', [friendUsername])
+  }
   if (target.length === 0 || target[0].values.length === 0) return { error: '用户不存在' }
   const friendId = target[0].values[0][0]
   if (friendId === userId) return { error: '不能加自己为好友' }
@@ -319,6 +368,7 @@ function getMessages(conversationId) {
 
 module.exports = {
   initDb, registerUser, authenticateUser, getUser, searchUsers,
+  updateUserProfile, updateUserPassword,
   sendFriendRequest, respondToFriendRequest, getFriendRequests, getFriends, removeFriend,
   createGroup, getGroups, getGroupMembers,
   getConversations, getConversationParticipants, getPrivateConversationName,

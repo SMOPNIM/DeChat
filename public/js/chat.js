@@ -2,6 +2,18 @@ let currentUser = null
 let socket = null
 let currentConvId = null
 
+function applyTheme(name) {
+  if (name === 'classic') {
+    document.documentElement.className = 'theme-classic'
+  } else {
+    document.documentElement.className = ''
+  }
+  localStorage.setItem('dechat-theme', name)
+  document.querySelectorAll('.theme-option').forEach(el => {
+    el.classList.toggle('active', el.dataset.theme === name)
+  })
+}
+
 function $(id) { return document.getElementById(id) }
 
 async function api(path, opts = {}) {
@@ -71,8 +83,12 @@ function renderMessage(msg) {
   const isSelf = currentUser && msg.user_id === currentUser.id
   const div = document.createElement('div')
   div.className = `message ${isSelf ? 'self' : ''}`
+  const avatarStyle = msg.avatar
+    ? `background-image:url(${msg.avatar});background-size:cover;background-position:center;`
+    : `background:${getAvatarColor(msg.username)}`
+  const avatarContent = msg.avatar ? '' : getInitials(msg.nickname)
   div.innerHTML = `
-    <div class="message-avatar" style="background:${getAvatarColor(msg.username)}">${getInitials(msg.nickname)}</div>
+    <div class="message-avatar" style="${avatarStyle}">${avatarContent}</div>
     <div class="message-body">
       <div class="message-header">
         <span class="name">${escapeHtml(msg.nickname)}</span>
@@ -103,14 +119,26 @@ function showChat() {
   $('auth-page').style.display = 'none'
   $('chat-page').style.display = 'flex'
   $('my-nickname').textContent = currentUser.nickname
-  const av = $('my-avatar')
-  av.textContent = getInitials(currentUser.nickname)
-  av.style.background = getAvatarColor(currentUser.username)
+  renderTopAvatar()
   initSocket()
   loadConversations()
   loadFriends()
   loadFriendRequests()
   loadGroups()
+}
+
+function renderTopAvatar() {
+  const av = $('my-avatar')
+  if (currentUser.avatar) {
+    av.style.backgroundImage = `url(${currentUser.avatar})`
+    av.style.backgroundSize = 'cover'
+    av.style.background = `url(${currentUser.avatar}) center/cover`
+    av.textContent = ''
+  } else {
+    av.style.backgroundImage = ''
+    av.style.background = getAvatarColor(currentUser.username)
+    av.textContent = getInitials(currentUser.nickname)
+  }
 }
 
 function showAuth() {
@@ -355,6 +383,7 @@ async function sendMessage(content, type = 'text') {
     return
   }
   $('message-input').value = ''
+  $('preview-content').innerHTML = '<span class="preview-placeholder">预览</span>'
   $('message-input').focus()
   loadConversations()
 }
@@ -433,10 +462,136 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault(); $('register-form').style.display = 'none'; $('login-form').style.display = 'block'
   })
 
-  $('logout-btn').addEventListener('click', async () => {
+  /* Dropdown */
+  const dropdownTrigger = $('dropdown-trigger')
+  const dropdownMenu = $('dropdown-menu')
+  dropdownTrigger.addEventListener('click', (e) => {
+    e.stopPropagation()
+    const isOpen = dropdownMenu.style.display === 'block'
+    dropdownMenu.style.display = isOpen ? 'none' : 'block'
+    dropdownTrigger.querySelector('.dropdown-arrow').classList.toggle('open', !isOpen)
+  })
+  document.addEventListener('click', (e) => {
+    if (!dropdownTrigger.contains(e.target)) {
+      dropdownMenu.style.display = 'none'
+      dropdownTrigger.querySelector('.dropdown-arrow').classList.remove('open')
+    }
+  })
+
+  $('dropdown-logout').addEventListener('click', async () => {
     await api('/api/auth/logout', { method: 'POST' })
     if (socket) socket.disconnect()
     currentUser = null; showAuth()
+  })
+
+  /* Settings */
+  $('dropdown-settings').addEventListener('click', () => {
+    dropdownMenu.style.display = 'none'
+    dropdownTrigger.querySelector('.dropdown-arrow').classList.remove('open')
+    openSettings()
+  })
+
+  function openSettings() {
+    showModal('settings-modal')
+    $('settings-uid').value = currentUser.id
+    $('settings-username').value = currentUser.username
+    $('settings-nickname').value = currentUser.nickname
+    $('settings-profile-error').textContent = ''
+    $('settings-password-error').textContent = ''
+    $('settings-old-password').value = ''
+    $('settings-new-password').value = ''
+    $('settings-confirm-password').value = ''
+    renderSettingsAvatar()
+  }
+
+  function renderSettingsAvatar() {
+    const el = $('settings-avatar')
+    if (currentUser.avatar) {
+      el.style.backgroundImage = `url(${currentUser.avatar})`
+      el.style.backgroundSize = 'cover'
+      el.textContent = ''
+    } else {
+      el.style.backgroundImage = ''
+      el.style.background = getAvatarColor(currentUser.username)
+      el.textContent = getInitials(currentUser.nickname)
+    }
+  }
+
+  $('save-profile-btn').addEventListener('click', async () => {
+    const username = $('settings-username').value.trim()
+    const nickname = $('settings-nickname').value.trim()
+    if (!username || !nickname) { $('settings-profile-error').textContent = '请填写所有字段'; return }
+    const data = await api('/api/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify({ username, nickname }),
+    })
+    if (data.error) { $('settings-profile-error').textContent = data.error; return }
+    currentUser = data.user
+    $('my-nickname').textContent = currentUser.nickname
+    renderTopAvatar()
+    renderSettingsAvatar()
+    $('settings-profile-error').textContent = ''
+    $('settings-profile-error').style.color = '#2ecc71'
+    $('settings-profile-error').textContent = '保存成功'
+    setTimeout(() => { $('settings-profile-error').style.color = '#e74c3c' }, 2000)
+  })
+
+  $('save-password-btn').addEventListener('click', async () => {
+    const oldPassword = $('settings-old-password').value
+    const newPassword = $('settings-new-password').value
+    const confirmPassword = $('settings-confirm-password').value
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      $('settings-password-error').textContent = '请填写所有字段'; return
+    }
+    if (newPassword !== confirmPassword) {
+      $('settings-password-error').textContent = '两次密码不一致'; return
+    }
+    if (newPassword.length < 6) {
+      $('settings-password-error').textContent = '新密码长度至少 6 位'; return
+    }
+    const data = await api('/api/auth/password', {
+      method: 'PUT',
+      body: JSON.stringify({ oldPassword, newPassword }),
+    })
+    if (data.error) { $('settings-password-error').textContent = data.error; return }
+    $('settings-old-password').value = ''
+    $('settings-new-password').value = ''
+    $('settings-confirm-password').value = ''
+    $('settings-password-error').textContent = ''
+    $('settings-password-error').style.color = '#2ecc71'
+    $('settings-password-error').textContent = '密码修改成功'
+    setTimeout(() => { $('settings-password-error').style.color = '#e74c3c' }, 2000)
+  })
+
+  $('upload-avatar-btn').addEventListener('click', () => $('avatar-input').click())
+  $('avatar-input').addEventListener('change', async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    const formData = new FormData()
+    formData.append('avatar', file)
+    const data = await api('/api/auth/avatar', { method: 'POST', body: formData })
+    if (data.error) { $('settings-profile-error').textContent = data.error; return }
+    currentUser.avatar = data.avatar
+    renderTopAvatar()
+    renderSettingsAvatar()
+    $('settings-profile-error').textContent = ''
+    $('settings-profile-error').style.color = '#2ecc71'
+    $('settings-profile-error').textContent = '头像更新成功'
+    setTimeout(() => { $('settings-profile-error').style.color = '#e74c3c' }, 2000)
+    e.target.value = ''
+  })
+
+  /* Theme */
+  const savedTheme = localStorage.getItem('dechat-theme') || 'default'
+  applyTheme(savedTheme)
+  document.querySelectorAll('.theme-option').forEach(opt => {
+    opt.addEventListener('click', () => applyTheme(opt.dataset.theme))
+  })
+
+  $('dropdown-theme').addEventListener('click', () => {
+    dropdownMenu.style.display = 'none'
+    dropdownTrigger.querySelector('.dropdown-arrow').classList.remove('open')
+    openSettings()
   })
 
   /* Sidebar tabs */
@@ -448,6 +603,16 @@ document.addEventListener('DOMContentLoaded', () => {
   $('send-btn').addEventListener('click', () => {
     const content = $('message-input').value.trim()
     if (content) sendMessage(content)
+  })
+  $('preview-content').innerHTML = '<span class="preview-placeholder">预览</span>'
+  $('message-input').addEventListener('input', () => {
+    const content = $('message-input').value
+    const preview = $('preview-content')
+    if (!content.trim()) {
+      preview.innerHTML = '<span class="preview-placeholder">预览</span>'
+    } else {
+      preview.innerHTML = renderMessageContent(content, 'text')
+    }
   })
   $('message-input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {

@@ -41,9 +41,19 @@
     <div class="top-bar">
       <span class="top-bar-title">德信 · DeChat</span>
       <div class="top-bar-right">
-        <span class="user-avatar" id="my-avatar"></span>
-        <span class="user-nickname" id="my-nickname"></span>
-        <button class="btn btn-sm" id="logout-btn">退出</button>
+        <div class="user-dropdown" id="user-dropdown">
+          <div class="user-dropdown-trigger" id="dropdown-trigger">
+            <span class="user-avatar" id="my-avatar"></span>
+            <span class="user-nickname" id="my-nickname"></span>
+            <span class="dropdown-arrow">▾</span>
+          </div>
+          <div class="dropdown-menu" id="dropdown-menu" style="display:none">
+            <div class="dropdown-item" id="dropdown-settings">⚙️ 用户设置</div>
+            <div class="dropdown-item" id="dropdown-theme">🎨 主题设置</div>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-item" id="dropdown-logout">🚪 退出登录</div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="chat-body">
@@ -99,6 +109,9 @@
         </div>
         <div class="input-row">
           <textarea id="message-input" placeholder="输入消息..." rows="3"></textarea>
+          <div class="input-preview" id="message-preview">
+            <div class="preview-content" id="preview-content"></div>
+          </div>
           <button class="btn btn-primary send-btn" id="send-btn">发送</button>
       </div>
     </div>
@@ -111,7 +124,7 @@
     <div class="modal" id="add-friend-modal">
       <div class="modal-header"><h3>添加好友</h3><button class="modal-close">&times;</button></div>
       <div class="modal-body">
-        <div class="form-group"><input type="text" id="search-user-input" placeholder="输入用户名搜索"></div>
+        <div class="form-group"><input type="text" id="search-user-input" placeholder="输入用户名或 UID 搜索"></div>
         <div class="search-results" id="search-results"></div>
         <div class="form-error" id="add-friend-error"></div>
       </div>
@@ -128,6 +141,48 @@
         <div class="friend-select" id="friend-select"></div>
         <div class="form-error" id="create-group-error"></div>
         <button class="btn btn-primary" id="confirm-create-group">创建群组</button>
+      </div>
+    </div>
+    <div class="modal" id="settings-modal">
+      <div class="modal-header"><h3>用户设置</h3><button class="modal-close">&times;</button></div>
+      <div class="modal-body">
+        <div class="settings-section">
+          <h4>头像</h4>
+          <div class="avatar-upload">
+            <div class="current-avatar" id="settings-avatar"></div>
+            <input type="file" id="avatar-input" accept="image/*" style="display:none">
+            <button class="btn btn-sm" id="upload-avatar-btn">更换头像</button>
+          </div>
+        </div>
+        <div class="settings-section">
+          <h4>基本信息</h4>
+          <div class="form-group"><label>UID</label><input type="text" id="settings-uid" disabled class="input-disabled"></div>
+          <div class="form-group"><label>用户名</label><input type="text" id="settings-username" placeholder="用户名"></div>
+          <div class="form-group"><label>昵称</label><input type="text" id="settings-nickname" placeholder="昵称"></div>
+          <div class="form-error" id="settings-profile-error"></div>
+          <button class="btn btn-primary" id="save-profile-btn">保存修改</button>
+        </div>
+        <div class="settings-section">
+          <h4>修改密码</h4>
+          <div class="form-group"><label>当前密码</label><input type="password" id="settings-old-password" placeholder="输入当前密码"></div>
+          <div class="form-group"><label>新密码</label><input type="password" id="settings-new-password" placeholder="至少 6 位"></div>
+          <div class="form-group"><label>确认新密码</label><input type="password" id="settings-confirm-password" placeholder="再次输入新密码"></div>
+          <div class="form-error" id="settings-password-error"></div>
+          <button class="btn btn-primary" id="save-password-btn">修改密码</button>
+        </div>
+        <div class="settings-section">
+          <h4>主题</h4>
+          <div class="theme-selector">
+            <div class="theme-option active" data-theme="default">
+              <div class="theme-preview theme-preview-default"></div>
+              <span>默认</span>
+            </div>
+            <div class="theme-option" data-theme="classic">
+              <div class="theme-preview theme-preview-classic"></div>
+              <span>经典</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

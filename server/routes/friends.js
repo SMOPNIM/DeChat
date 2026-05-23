@@ -26,9 +26,10 @@ router.get('/search', (req, res) => {
 })
 
 router.post('/request', (req, res) => {
-  const { username } = req.body
-  if (!username) return res.status(400).json({ error: '请输入用户名' })
-  const result = sendFriendRequest(req.session.userId, username)
+  const { username, uid } = req.body
+  const identifier = uid !== undefined ? String(uid) : username
+  if (!identifier) return res.status(400).json({ error: '请输入用户名或 UID' })
+  const result = sendFriendRequest(req.session.userId, identifier)
   if (result.error) return res.status(400).json({ error: result.error })
   const io = req.app.get('io')
   if (result.auto_accepted) {
